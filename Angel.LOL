@@ -70,10 +70,7 @@ local function createHighlight()
 end
 
 local function removeHighlight()
-	if currentHighlight then
-		currentHighlight:Destroy()
-		currentHighlight = nil
-	end
+	if currentHighlight then currentHighlight:Destroy() currentHighlight = nil end
 end
 
 local function notify(txt, col)
@@ -121,11 +118,37 @@ local function getClosest()
 	return closest
 end
 
-local function intro() -- giữ nguyên intro v2
-	-- (copy nguyên hàm intro từ v2.0 bạn đã có)
-	local scr = Instance.new("ScreenGui",gui) scr.Name="ANGEL_INTRO" scr.ResetOnSpawn=false
-	-- ... (giữ nguyên code intro để ngắn, bạn có thể paste lại từ v2)
-	-- hoặc comment nếu không muốn intro nữa
+local function intro()
+	local scr = Instance.new("ScreenGui",gui)
+	scr.Name = "ANGEL_INTRO"
+	scr.ResetOnSpawn = false
+	local f = Instance.new("Frame",scr)
+	f.Size = UDim2.new(1,0,1,0)
+	f.BackgroundColor3 = Color3.fromRGB(0,0,0)
+	local txt = Instance.new("TextLabel",f)
+	txt.AnchorPoint = Vector2.new(0.5,0.5)
+	txt.Position = UDim2.new(0.5,0,0.5,0)
+	txt.Size = UDim2.new(0.8,0,0.3,0)
+	txt.Font = Enum.Font.GothamBlack
+	txt.TextScaled = true
+	txt.BackgroundTransparency = 1
+	txt.TextTransparency = 1
+	txt.Text = ""
+	local hue = 0
+	local conn = run.RenderStepped:Connect(function(dt)
+		hue = (hue + dt*0.5)%1
+		txt.TextColor3 = hsv(hue,1,1)
+	end)
+	txt.Text = "Introducing"
+	for i=1,0,-0.05 do txt.TextTransparency = i task.wait(0.05) end
+	task.wait(0.5)
+	for i=0,1,0.05 do txt.TextTransparency = i task.wait(0.05) end
+	txt.Text = "Angel.LOL"
+	for i=1,0,-0.05 do txt.TextTransparency = i task.wait(0.05) end
+	task.wait(0.5)
+	for i=0,1,0.05 do txt.TextTransparency = i task.wait(0.05) end
+	conn:Disconnect()
+	scr:Destroy()
 end
 
 local function makeUI()
@@ -140,14 +163,12 @@ local function makeUI()
 	local corner = Instance.new("UICorner",main) corner.CornerRadius = UDim.new(0,16)
 	local stroke = Instance.new("UIStroke",main) stroke.Color = Color3.fromRGB(0,162,255) stroke.Thickness = 3
 
-	-- Title + drag + close (giữ nguyên v2)
 	local titleBar = Instance.new("Frame",main) titleBar.Size = UDim2.new(1,0,0,62) titleBar.BackgroundColor3 = Color3.fromRGB(22,22,28)
 	Instance.new("UICorner",titleBar).CornerRadius = UDim.new(0,16)
 	local title = Instance.new("TextLabel",titleBar) title.Size = UDim2.new(1,-70,1,0) title.Position = UDim2.new(0,25,0,0)
 	title.BackgroundTransparency = 1 title.Text = "ANGEL.LOL v3.0" title.Font = Enum.Font.GothamBlack title.TextSize = 29 title.TextColor3 = Color3.new(1,1,1)
 	run.RenderStepped:Connect(function(dt) local h=(tick()*0.8)%1 title.TextColor3 = hsv(h,0.95,1) end)
 
-	-- Dragging & save
 	local dragging,dragStart,startPos = false
 	titleBar.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then dragging=true dragStart=i.Position startPos=main.Position end end)
 	uis.InputChanged:Connect(function(i) if dragging and i.UserInputType==Enum.UserInputType.MouseMovement then local delta = i.Position-dragStart main.Position = UDim2.new(startPos.X.Scale,startPos.X.Offset+delta.X,startPos.Y.Scale,startPos.Y.Offset+delta.Y) end end)
@@ -156,183 +177,63 @@ local function makeUI()
 	local close = Instance.new("TextButton",titleBar) close.Size = UDim2.new(0,40,0,40) close.Position = UDim2.new(1,-50,0.5,-20) close.BackgroundTransparency=1 close.Text="✕" close.TextColor3=Color3.fromRGB(255,80,80) close.TextSize=32
 	close.MouseButton1Click:Connect(function() scr:Destroy() end)
 
-	-- Content
 	local content = Instance.new("Frame",main) content.Size = UDim2.new(1,-40,1,-90) content.Position = UDim2.new(0,20,0,75) content.BackgroundTransparency = 1
 
-	-- Toggle Lock (giữ v2)
-	local toggle = Instance.new("TextButton",content)	local closest,dist
-	local vp = cam.ViewportSize
-	local mid = Vector2.new(vp.X/2,vp.Y/2)
-	for _,p in pairs(plrs:GetPlayers()) do
-		if p\~=lp and alive(p) then
-			local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-			if hrp then
-				local pos,on = cam:WorldToViewportPoint(hrp.Position)
-				if on then
-					local m = (Vector2.new(pos.X,pos.Y)-mid).Magnitude
-					if not dist or m<dist then
-						dist = m
-						closest = p
-					end
-				end
-			end
-		end
-	end
-	return closest
-end
-
-local function respawnTrack(p,lbl)
-	p.CharacterAdded:Connect(function()
-		if p==tgt and locked then
-			lbl.Text = "Target: "..p.Name.." (respawned)"
-		end
-	end)
-end
-
-local function intro()
-	local scr = Instance.new("ScreenGui",gui)
-	scr.Name = "ANGEL_INTRO"
-	scr.ResetOnSpawn = false
-
-	local f = Instance.new("Frame",scr)
-	f.Size = UDim2.new(1,0,1,0)
-	f.BackgroundColor3 = Color3.fromRGB(0,0,0)
-
-	local txt = Instance.new("TextLabel",f)
-	txt.AnchorPoint = Vector2.new(0.5,0.5)
-	txt.Position = UDim2.new(0.5,0,0.5,0)
-	txt.Size = UDim2.new(0.8,0,0.3,0)
-	txt.Font = Enum.Font.GothamBlack
-	txt.TextScaled = true
-	txt.BackgroundTransparency = 1
-	txt.TextTransparency = 1
-	txt.Text = ""
-
-	local hue = 0
-	local conn
-	conn = run.RenderStepped:Connect(function(dt)
-		hue = (hue + dt*0.5)%1
-		txt.TextColor3 = hsv(hue,1,1)
-	end)
-
-	txt.Text = "Introducing"
-	for i=1,0,-0.05 do
-		txt.TextTransparency = i
-		task.wait(0.05)
-	end
-	task.wait(0.5)
-	for i=0,1,0.05 do
-		txt.TextTransparency = i
-		task.wait(0.05)
-	end
-
-	txt.Text = "Angel.LOL"
-	for i=1,0,-0.05 do
-		txt.TextTransparency = i
-		task.wait(0.05)
-	end
-	task.wait(0.5)
-	for i=0,1,0.05 do
-		txt.TextTransparency = i
-		task.wait(0.05)
-	end
-
-	conn:Disconnect()
-	scr:Destroy()
-end
-
-local function makeUI()
-	local scr = Instance.new("ScreenGui",gui)
-	scr.Name = "ANGEL_UI"
-	scr.ResetOnSpawn = false
-
-	local btn = Instance.new("TextButton",scr)
-	btn.Size = UDim2.new(0,180,0,45)
-	btn.BackgroundColor3 = Color3.fromRGB(25,25,25)
-	btn.BorderColor3 = Color3.fromRGB(0,120,255)
-	btn.BorderSizePixel = 3
-	btn.Font = Enum.Font.GothamBlack
-	btn.TextSize = 18
-	btn.Text = "Angel.LOL"
-	btn.TextColor3 = Color3.new(1,1,1)
-
-	local save = getshared and getshared(savedKey)
-	if save and typeof(save)=="UDim2" then
-		btn.Position = save
-	else
-		btn.Position = UDim2.new(0,15,0,15)
-	end
-
-	local lbl = Instance.new("TextLabel",btn)
-	lbl.AnchorPoint = Vector2.new(0,1)
-	lbl.Position = UDim2.new(0,5,1,-3)
-	lbl.Size = UDim2.new(1,-10,0,14)
-	lbl.BackgroundTransparency = 1
-	lbl.Font = Enum.Font.GothamMedium
-	lbl.TextSize = 12
-	lbl.TextColor3 = Color3.fromRGB(200,200,200)
-	lbl.Text = "No target"
-
-	local dragging=false
-	local dragStart,posStart
-	local activeTouch=nil
-
-	local function upd(i)
-		local d = i.Position - dragStart
-		btn.Position = UDim2.new(posStart.X.Scale,posStart.X.Offset+d.X,posStart.Y.Scale,posStart.Y.Offset+d.Y)
-	end
-
-	btn.InputBegan:Connect(function(i)
-		if (i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseButton1) and not activeTouch then
-			activeTouch = i
-			dragging=true
-			dragStart=i.Position
-			posStart=btn.Position
-
-			local move,stop
-			move = uis.InputChanged:Connect(function(m)
-				if dragging and (m==activeTouch) then
-					upd(m)
-				end
-			end)
-
-			stop = i.Changed:Connect(function()
-				if i.UserInputState==Enum.UserInputState.End then
-					dragging=false
-					activeTouch=nil
-					move:Disconnect()
-					stop:Disconnect()
-					if setshared then setshared(savedKey,btn.Position) end
-				end
-			end)
-		end
-	end)
-
-	btn.MouseButton1Click:Connect(function()
-		locked=not locked
+	local toggle = Instance.new("TextButton",content) toggle.Size = UDim2.new(1,0,0,80) toggle.Position = UDim2.new(0,0,0,0)
+	toggle.BackgroundColor3 = Color3.fromRGB(30,30,35) toggle.Text = "LOCK CAMERA" toggle.TextColor3 = Color3.new(1,1,1) toggle.Font = Enum.Font.GothamBlack toggle.TextSize = 26
+	Instance.new("UICorner",toggle).CornerRadius = UDim.new(0,14)
+	toggle.MouseButton1Click:Connect(function()
+		locked = not locked
 		if locked then
-			tgt=getClosest()
-			if tgt then
-				lbl.Text="Target: "..tgt.Name
-				respawnTrack(tgt,lbl)
-			else
-				lbl.Text="No valid target"
-			end
+			tgt = getClosest()
+			toggle.BackgroundColor3 = Color3.fromRGB(0,180,80)
+			toggle.Text = "LOCKING ACTIVE"
+			createHighlight()
+			notify("LOCKED: "..(tgt and tgt.Name or "None"), Color3.fromRGB(0,255,100))
 		else
-			tgt=nil
-			lbl.Text="No target"
+			tgt = nil
+			toggle.BackgroundColor3 = Color3.fromRGB(30,30,35)
+			toggle.Text = "LOCK CAMERA"
+			removeHighlight()
+			notify("UNLOCKED", Color3.fromRGB(255,100,100))
 		end
 	end)
 
-	run.RenderStepped:Connect(function()
-		local h=(tick()*0.25)%1
-		btn.TextColor3=hsv(h,1,1)
-		lbl.TextColor3=hsv((h+0.2)%1,1,1)
+	local y = 100
+	local function addToggle(txt, val, callback)
+		local b = Instance.new("TextButton",content)
+		b.Size = UDim2.new(1,0,0,50)
+		b.Position = UDim2.new(0,0,0,y)
+		b.BackgroundColor3 = val and Color3.fromRGB(0,162,255) or Color3.fromRGB(35,35,40)
+		b.Text = txt
+		b.TextColor3 = Color3.new(1,1,1)
+		b.Font = Enum.Font.GothamBold
+		b.TextSize = 18
+		Instance.new("UICorner",b).CornerRadius = UDim.new(0,12)
+		b.MouseButton1Click:Connect(function()
+			val = not val
+			b.BackgroundColor3 = val and Color3.fromRGB(0,162,255) or Color3.fromRGB(35,35,40)
+			callback(val)
+		end)
+		y = y + 60
+		return b
+	end
 
-		if locked and tgt and alive(tgt) then
-			local prt=tgt.Character:FindFirstChild("UpperTorso") or tgt.Character:FindFirstChild("Head")
-			if prt then
-				cam.CFrame=CFrame.new(cam.CFrame.Position,prt.Position)
+	addToggle("Team Check", teamCheck, function(v) teamCheck = v end)
+	addToggle("Visible Only", visCheck, function(v) visCheck = v end)
+	addToggle("Prediction", usePrediction, function(v) usePrediction = v end)
+	addToggle("FOV Circle", showFov, function(v) showFov = v end)
+	addToggle("Highlight ESP", highlightESP, function(v) highlightESP = v if not v then removeHighlight() end end)
+
+	local fovTitle = Instance.new("TextLabel",content) fovTitle.Size = UDim2.new(1,0,0,25) fovTitle.Position = UDim2.new(0,0,0,y) fovTitle.BackgroundTransparency=1 fovTitle.Text="FOV: "..fov fovTitle.TextColor3=Color3.fromRGB(180,180,180) fovTitle.Font=Enum.Font.GothamMedium fovTitle.TextSize=16 y=y+30
+	local fovMinus = Instance.new("TextButton",content) fovMinus.Size=UDim2.new(0.2,0,0,45) fovMinus.Position=UDim2.new(0,0,0,y) fovMinus.Text="-" fovMinus.BackgroundColor3=Color3.fromRGB(35,35,40) fovMinus.TextSize=24 Instance.new("UICorner",fovMinus).CornerRadius=UDim.new(0,12)
+	fovMinus.MouseButton1Click:Connect(function() fov=math.max(40,fov-10) fovTitle.Text="FOV: "..fov end)
+	local fovPlus = Instance.new("TextButton",content) fovPlus.Size=UDim2.new(0.2,0,0,45) fovPlus.Position=UDim2.new(0.8,0,0,y) fovPlus.Text="+" fovPlus.BackgroundColor3=Color3.fromRGB(35,35,40) fovPlus.TextSize=24 Instance.new("UICorner",fovPlus).CornerRadius=UDim.new(0,12)
+	fovPlus.MouseButton1Click:Connect(function() fov=math.min(300,fov+10) fovTitle.Text="FOV: "..fov end)
+	y=y+60
+
+	local predTitle = Instance.new("TextLabel",content) predTitle.Size = UDim2.new(1,0,0,25) predTitle.Position = UDim2.new(0,0,0,y) predTitle.BackgroundTransparency=1 predTitle.Text="Prediction: "..prediction predTitle.TextColor3=Color3.fromRGB(180,180,180) predTitle.Font=Enum.Font.GothamMedium predTitle.TextSize=16 y=y+30
+	local predMinus = Instance.new("TextButton",content) predMinus.Size=UDim2.new(0.2,0,0,45) predMinus.Position=UD(cam.CFrame.Position,prt.Position)
 			end
 		end
 	end)
