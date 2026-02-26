@@ -1,5 +1,3 @@
---// Angel.LOL
-
 local plrs = game:GetService("Players")
 local run = game:GetService("RunService")
 local uis = game:GetService("UserInputService")
